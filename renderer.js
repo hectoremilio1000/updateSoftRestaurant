@@ -1,56 +1,101 @@
-const { ipcRenderer } = require('electron');
-const { rmdir } = require('original-fs');
 var dataupload = [];
-document.getElementById('fetch-data').addEventListener('click', async () => {
-  console.log('click');
-  const data = await ipcRenderer.invoke('get-table-data');
+var empresainfolist;
+window.addEventListener('DOMContentLoaded', () => {
+  const interfaz1 = document.getElementById('interfaz1');
+  const interfaz2 = document.getElementById('interfaz2');
+  const form = document.getElementById('formEmpresa');
+  const empresaInfo = document.getElementById('empresaInfo');
 
-  if (data.error) {
-    alert('Error al obtener datos: ' + data.error);
-    return;
-  }
+  window.electronAPI.onEmpresaNoExiste(() => {
+    interfaz1.classList.remove('hidden');
+  });
 
-  const headers = document.getElementById('table-headers');
-  const body = document.getElementById('table-body');
-  const buttonUplopad = document.getElementById('upload_btn');
+  window.electronAPI.onEmpresaExiste((empresa) => {
+    empresainfolist = empresa;
+    mostrarEmpresa(empresa);
+  });
 
-  // Limpia la tabla anterior
-  headers.innerHTML = '';
-  body.innerHTML = '';
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const empresa_id = parseInt(document.getElementById('empresa_id').value);
+    const razon_social = document.getElementById('razon_social').value;
 
-  if (data.length > 0) {
-    // Construye encabezados
-    Object.keys(data[0]).forEach((key) => {
-      const th = document.createElement('th');
-      th.classList.add('px-3');
-      th.innerText = key;
-      headers.appendChild(th);
-    });
-
-    // Construye filas
-    data.forEach((row) => {
-      const tr = document.createElement('tr');
-      Object.values(row).forEach((value) => {
-        const td = document.createElement('td');
-        td.classList.add('px-3');
-        td.innerText = value;
-        tr.appendChild(td);
+    try {
+      const nuevaEmpresa = await window.electronAPI.registrarEmpresa({
+        empresa_id,
+        razon_social,
       });
-      body.appendChild(tr);
-    });
-    dataupload = data;
-    buttonUplopad.classList.remove('hidden');
-  } else {
-    const tr = document.createElement('tr');
-    const td = document.createElement('td');
-    td.classList.add('px-3');
-    td.innerText = 'No hay datos disponibles.';
-    td.colSpan = Object.keys(data[0] || {}).length || 1;
-    tr.appendChild(td);
-    body.appendChild(tr);
+      mostrarEmpresa(nuevaEmpresa);
+    } catch (error) {
+      alert('Error al guardar la empresa');
+    }
+  });
+
+  function mostrarEmpresa(empresa) {
+    interfaz1.classList.add('hidden');
+    interfaz2.classList.remove('hidden');
+    empresaInfo.innerHTML = `
+      <p><strong>ID:</strong> ${empresa.id}</p>
+      <p><strong>Empresa ID:</strong> ${empresa.empresa_id}</p>
+      <p><strong>Razón Social:</strong> ${empresa.razon_social}</p>
+    `;
   }
-});
-document.getElementById('upload_btn').addEventListener('click', async () => {
-  const data = await ipcRenderer.invoke('post-upload-data', dataupload);
-  console.log(data);
+  document.getElementById('fetch-data').addEventListener('click', async () => {
+    console.log('click');
+    const data = await window.electronAPI.getTableData();
+
+    if (data.error) {
+      alert('Error al obtener datos: ' + data.error);
+      return;
+    }
+
+    const headers = document.getElementById('table-headers');
+    const body = document.getElementById('table-body');
+    const buttonUplopad = document.getElementById('upload_btn');
+
+    // Limpia la tabla anterior
+    headers.innerHTML = '';
+    body.innerHTML = '';
+
+    if (data.length > 0) {
+      const columns = Object.keys(data[0]); // ✅ ESTA ES LA CORRECCIÓN
+      let grid;
+
+      function renderTable(limit) {
+        const container = document.getElementById('table-wrapper');
+        container.innerHTML = ''; // limpiar antes de volver a renderizar
+
+        grid = new gridjs.Grid({
+          columns,
+          data: data.map((row) => Object.values(row)), // convertir objetos a arrays de valores
+          pagination: {
+            enabled: true,
+            limit: limit,
+            summary: true,
+          },
+          search: true,
+          sort: true,
+          className: {
+            table: 'w-full text-sm text-left text-gray-700',
+          },
+        });
+
+        grid.render(container);
+      }
+
+      renderTable(10);
+
+      document.getElementById('pageSize').addEventListener('change', (e) => {
+        const newLimit = parseInt(e.target.value);
+        renderTable(newLimit);
+      });
+
+      dataupload = data;
+      buttonUplopad.classList.remove('hidden');
+    }
+  });
+  document.getElementById('upload_btn').addEventListener('click', async () => {
+    const data = await window.electronAPI.uploadData(dataupload);
+    console.log(data);
+  });
 });

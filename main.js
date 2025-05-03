@@ -1,10 +1,10 @@
+const { app, BrowserWindow, ipcMain } = require('electron');
+const path = require('path');
 const sql = require('mssql');
 const dotenv = require('dotenv');
-const { app, BrowserWindow, ipcMain } = require('electron');
-const fetch = require('node-fetch');
 
 dotenv.config();
-
+// Configuración SQL Server
 const config = {
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
@@ -16,121 +16,118 @@ const config = {
     trustServerCertificate: true, // Solo para desarrollo local
   },
 };
-
 const API_URL = process.env.urlupdata || 'http://localhost:8080/apidataup'; // URL de la API
 const EXECUTION_HOUR = '23:20'; // Hora específica en formato 24h (HH:mm)
 
 let mainWindow;
 
-app.whenReady().then(() => {
+function createWindow() {
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      preload: path.join(__dirname, 'preload.js'),
     },
   });
 
   mainWindow.loadFile('index.html');
 
-  // Función para obtener datos de SQL y enviarlos a la API
-  async function fetchAndSendData() {
-    try {
-      console.log('Ejecutando consulta SQL...');
+  mainWindow.webContents.on('did-finish-load', () => {
+    verificarEmpresa();
+  });
+}
 
-      const pool = await sql.connect(config);
-      const result = await sql.query(`
-        SELECT c.cantidad, c.descuento, c.descripcion as name_producto, 
-               c.precio, c.impuesto1, c.preciosinimpuestos, c.preciocatalogo, c.comentario, c.idestacion, c.idmeseroproducto, t.apertura, t.cierre, t.cajero, t.efectivo, t.vales, t.tarjeta, t.credito, t.fondo
-        FROM cheqdet as c 
-        INNER JOIN productos as p ON c.idproducto = p.idproducto INNER JOIN turnos as t ON c.idturno_cierre = t.idturno
-      `);
+app.whenReady().then(createWindow);
 
-      const data = result.recordset;
+async function verificarEmpresa() {
+  try {
+    const pool = await sql.connect(config);
+    const result = await sql.query(`
+      IF NOT EXISTS (
+        SELECT * FROM sysobjects WHERE name='configadonisempresa' AND xtype='U'
+      )
+      BEGIN
+        CREATE TABLE dbo.configadonisempresa (
+          id INT IDENTITY(1,1) PRIMARY KEY,
+          empresa_id INT NOT NULL,
+          razon_social VARCHAR(255) NOT NULL
+        )
+      END;
 
-      if (data.length === 0) {
-        console.log('No hay datos para enviar.');
-        return;
-      }
+      SELECT * FROM dbo.configadonisempresa;
+    `);
 
-      console.log('Enviando datos a la API...');
-      console.log(data);
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      const responseData = await response.json();
-      console.log('Respuesta de la API:', responseData);
-    } catch (err) {
-      console.error('Error en el proceso:', err);
-    } finally {
-      sql.close();
+    const empresa = result.recordset[0];
+    if (empresa) {
+      mainWindow.webContents.send('empresa-existe', empresa);
+    } else {
+      mainWindow.webContents.send('empresa-no-existe');
     }
+  } catch (err) {
+    console.error('Error al verificar empresa:', err);
+  } finally {
+    sql.close();
   }
+}
 
-  // Manejo de eventos para obtener datos desde la base de datos
-  ipcMain.handle('get-table-data', async (event) => {
-    try {
-      console.log('Ejecutando consulta SQL...');
+ipcMain.handle('registrar-empresa', async (event, datos) => {
+  try {
+    const pool = await sql.connect(config);
+    const insert = await pool
+      .request()
+      .input('empresa_id', sql.Int, datos.empresa_id)
+      .input('razon_social', sql.VarChar(255), datos.razon_social)
+      .query(
+        'INSERT INTO dbo.configadonisempresa (empresa_id, razon_social) OUTPUT INSERTED.* VALUES (@empresa_id, @razon_social)'
+      );
 
-      const pool = await sql.connect(config);
-      const result = await sql.query(`
-        SELECT c.cantidad, c.descuento, p.descripcion as name_producto, 
-               c.precio, c.impuesto1, c.preciosinimpuestos, c.preciocatalogo, c.comentario, c.idestacion, c.idmeseroproducto, t.apertura, t.cierre, t.cajero, t.efectivo, t.vales, t.tarjeta, t.credito, t.fondo
-        FROM cheqdet as c 
-        INNER JOIN productos as p ON c.idproducto = p.idproducto INNER JOIN turnos as t ON c.idturno_cierre = t.idturno
-      `);
-
-      const data = result.recordset;
-
-      return data;
-    } catch (err) {
-      console.error('SQL Error:', err);
-      return { error: err.message };
-    } finally {
-      sql.close();
-    }
-  });
-  // Manejo de eventos para enviar datos desde la base de datos
-  ipcMain.handle('post-upload-data', async (event, data) => {
-    try {
-      console.log('Enviando datos a la API...');
-      console.log(data);
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ company_id: 1, ventas_softs: data }),
-      });
-
-      const responseData = await response.json();
-      console.log('Respuesta de la API:', responseData);
-    } catch (err) {
-      console.error('Error en el proceso:', err);
-    }
-  });
-
-  // Comprobar cada minuto si es la hora específica
-  // setInterval(() => {
-  //   const now = new Date();
-  //   const currentTime = now.toLocaleTimeString('es-ES', {
-  //     hour12: false,
-  //     hour: '2-digit',
-  //     minute: '2-digit',
-  //   });
-
-  //   if (currentTime === EXECUTION_HOUR) {
-  //     fetchAndSendData();
-  //   }
-  // }, 60000); // 60000 ms = 1 minuto
+    return insert.recordset[0];
+  } catch (err) {
+    console.error('Error al registrar empresa:', err);
+    throw err;
+  } finally {
+    sql.close();
+  }
 });
+// Manejo de eventos para obtener datos desde la base de datos
+ipcMain.handle('get-table-data', async (event) => {
+  try {
+    console.log('Ejecutando consulta SQL...');
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+    const pool = await sql.connect(config);
+    const result = await sql.query(`
+      SELECT c.cantidad, c.descuento, p.descripcion as name_producto, 
+             c.precio, c.impuesto1, c.preciosinimpuestos, c.preciocatalogo, c.comentario, c.idestacion, c.idmeseroproducto, m.nombre as nombre_mesero, t.apertura, t.cierre, t.cajero, t.efectivo, t.vales, t.tarjeta, t.credito, t.fondo
+      FROM cheqdet as c 
+      INNER JOIN productos as p ON c.idproducto = p.idproducto INNER JOIN turnos as t ON c.idturno_cierre = t.idturno LEFT JOIN meseros as m ON c.idmeseroproducto=m.idmesero
+    `);
+
+    const data = result.recordset;
+
+    return data;
+  } catch (err) {
+    console.error('SQL Error:', err);
+    return { error: err.message };
+  } finally {
+    sql.close();
+  }
+});
+// Manejo de eventos para enviar datos desde la base de datos
+ipcMain.handle('post-upload-data', async (event, data) => {
+  try {
+    console.log('Enviando datos a la API...');
+    console.log(data);
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ company_id: 1, ventas_softs: data }),
+    });
+
+    const responseData = await response.json();
+    console.log('Respuesta de la API:', responseData);
+  } catch (err) {
+    console.error('Error en el proceso:', err);
+  }
 });

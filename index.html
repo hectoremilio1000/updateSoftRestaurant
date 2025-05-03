@@ -1,37 +1,95 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <title>SQL Server Table Viewer</title>
+    <title>Inicio</title>
+    <script defer src="renderer.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Grid.js CSS y JS -->
+    <link
+      href="https://unpkg.com/gridjs/dist/theme/mermaid.min.css"
+      rel="stylesheet"
+    />
   </head>
-  <body>
-    <div class="w-full py-8 px-4">
-      <h1 class="text-2xl font-bold">Lista de Datos</h1>
-
-      <button
-        id="fetch-data"
-        class="text-sm font-bold px-3 py-2 rounded bg-[#000] text-white"
-      >
-        Obtener Datos
-      </button>
-      <div class="w-full px-8 overflow-x-auto">
-        <table border="1" id="data-table" class="w-full">
-          <thead>
-            <tr id="table-headers"></tr>
-          </thead>
-          <tbody id="table-body"></tbody>
-        </table>
-      </div>
-      <button
-        id="upload_btn"
-        class="hidden px-3 py-2 rounded text-sm bg-blue-800 text-white"
-      >
-        Subir Data
-      </button>
+  <body class="bg-gray-100 p-4">
+    <!-- Interfaz 1: Registro de empresa -->
+    <div
+      id="interfaz1"
+      class="hidden max-w-md mx-auto bg-white p-6 rounded shadow"
+    >
+      <h2 class="text-xl font-bold mb-4">Registrar Empresa</h2>
+      <form id="formEmpresa" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium">ID Empresa</label>
+          <input
+            type="number"
+            id="empresa_id"
+            required
+            class="w-full border rounded p-2"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium">Razón Social</label>
+          <input
+            type="text"
+            id="razon_social"
+            required
+            class="w-full border rounded p-2"
+          />
+        </div>
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">
+          Guardar
+        </button>
+      </form>
     </div>
 
-    <script src="renderer.js"></script>
+    <!-- Interfaz 2: Mostrar datos -->
+    <div id="interfaz2" class="hidden bg-white p-6 rounded shadow">
+      <h2 class="text-xl font-bold mb-4">Empresa Registrada</h2>
+      <div id="empresaInfo" class="space-y-2">
+        <!-- Aquí se mostrará la empresa -->
+      </div>
+
+      <div class="w-full py-8 px-4">
+        <h1 class="text-2xl font-bold">Lista de Datos</h1>
+
+        <button
+          id="fetch-data"
+          class="text-sm font-bold px-3 py-2 rounded bg-[#000] text-white"
+        >
+          Obtener Datos
+        </button>
+        <div class="bg-white p-6 rounded shadow">
+          <!-- Selector de cantidad por página -->
+
+          <!-- Contenedor de la tabla -->
+          <div id="table-wrapper"></div>
+          <div class="mb-4">
+            <label for="pageSize" class="mr-2">Registros por página:</label>
+            <select id="pageSize" class="border p-1 rounded">
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+          </div>
+        </div>
+        <div class="w-full px-8 overflow-x-auto">
+          <table border="1" id="data-table" class="w-full">
+            <thead>
+              <tr id="table-headers"></tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+        <button
+          id="upload_btn"
+          class="hidden px-3 py-2 rounded text-sm bg-blue-800 text-white"
+        >
+          Subir Data
+        </button>
+      </div>
+    </div>
+    <script src="https://unpkg.com/gridjs/dist/gridjs.umd.js"></script>
   </body>
 </html>

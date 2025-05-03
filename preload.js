@@ -1,7 +1,11 @@
-const { contextBridge } = require('electron/renderer');
+const { contextBridge, ipcRenderer } = require('electron');
 
-contextBridge.exposeInMainWorld('versions', {
-  node: () => process.versions.node,
-  chrome: () => process.versions.chrome,
-  electron: () => process.versions.electron,
+contextBridge.exposeInMainWorld('electronAPI', {
+  onEmpresaExiste: (callback) =>
+    ipcRenderer.on('empresa-existe', (_, data) => callback(data)),
+  onEmpresaNoExiste: (callback) =>
+    ipcRenderer.on('empresa-no-existe', callback),
+  registrarEmpresa: (data) => ipcRenderer.invoke('registrar-empresa', data),
+  getTableData: (data) => ipcRenderer.invoke('get-table-data'),
+  uploadData: (data) => ipcRenderer.invoke('post-upload-data', data),
 });

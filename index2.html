@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Grid.js CSS y JS -->
+    <link
+      href="https://unpkg.com/gridjs/dist/theme/mermaid.min.css"
+      rel="stylesheet"
+    />
+    <title>SQL Server Table Viewer</title>
+  </head>
+  <body>
+    <div class="w-full py-8 px-4">
+      <h1 class="text-2xl font-bold">Lista de Datos</h1>
+
+      <button
+        id="fetch-data"
+        class="text-sm font-bold px-3 py-2 rounded bg-[#000] text-white"
+      >
+        Obtener Datos
+      </button>
+      <div class="bg-white p-6 rounded shadow">
+        <!-- Selector de cantidad por página -->
+
+        <!-- Contenedor de la tabla -->
+        <div id="table-wrapper"></div>
+        <div class="mb-4">
+          <label for="pageSize" class="mr-2">Registros por página:</label>
+          <select id="pageSize" class="border p-1 rounded">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+          </select>
+        </div>
+      </div>
+      <div class="w-full px-8 overflow-x-auto">
+        <table border="1" id="data-table" class="w-full">
+          <thead>
+            <tr id="table-headers"></tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+      <button
+        id="upload_btn"
+        class="hidden px-3 py-2 rounded text-sm bg-blue-800 text-white"
+      >
+        Subir Data
+      </button>
+    </div>
+
+    <script src="https://unpkg.com/gridjs/dist/gridjs.umd.js"></script>
+    <script src="renderer.js"></script>
+  </body>
+</html>
