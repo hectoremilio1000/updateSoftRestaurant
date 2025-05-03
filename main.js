@@ -96,8 +96,8 @@ ipcMain.handle('get-table-data', async (event) => {
 
     const pool = await sql.connect(config);
     const result = await sql.query(`
-      SELECT c.cantidad, c.descuento, p.descripcion as name_producto, 
-             c.precio, c.impuesto1, c.preciosinimpuestos, c.preciocatalogo, c.comentario, c.idestacion, c.idmeseroproducto, m.nombre as nombre_mesero, t.apertura, t.cierre, t.cajero, t.efectivo, t.vales, t.tarjeta, t.credito, t.fondo
+      SELECT TOP 100 c.cantidad, c.descuento, p.descripcion as name_producto, 
+             c.precio, c.impuesto1, c.preciosinimpuestos, c.preciocatalogo, c.comentario, c.idestacion, c.idmeseroproducto, m.nombre as name_mesero, t.apertura, t.cierre, t.cajero, t.efectivo, t.vales, t.tarjeta, t.credito, t.fondo
       FROM cheqdet as c 
       INNER JOIN productos as p ON c.idproducto = p.idproducto INNER JOIN turnos as t ON c.idturno_cierre = t.idturno LEFT JOIN meseros as m ON c.idmeseroproducto=m.idmesero
     `);
