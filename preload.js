@@ -1,4 +1,9 @@
+// preload.js
 const { contextBridge, ipcRenderer } = require('electron');
+const Tabulator = require('tabulator-tables');
+
+contextBridge.exposeInMainWorld('Tabulator', Tabulator);
+// … lo demás de tu bridge …
 
 contextBridge.exposeInMainWorld('electronAPI', {
   onEmpresaExiste: (cb) => ipcRenderer.on('empresa-existe', (_, d) => cb(d)),
