@@ -7,6 +7,7 @@ let pageSize = 10;
 
 /* --- helpers ------------------------------------------------ */
 const $ = (id) => document.getElementById(id);
+const statusMsg = $('statusMsg'); // 🆕 nuevo elemento
 
 function totalPages() {
   return Math.max(1, Math.ceil(rawData.length / pageSize));
@@ -135,20 +136,39 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  async function subirEnChunks(registros, size = 10000) {
+    const total = registros.length;
+    for (let i = 0; i < total; i += size) {
+      const chunk = registros.slice(i, i + size);
+
+      await window.electronAPI.uploadData({
+        company_id: empresainfolist.empresa_id,
+        ventas_softs: chunk,
+      });
+
+      statusMsg.textContent = `Subidos ${Math.min(i + size, total)} / ${total}`;
+    }
+  }
+
   /* ---------- subir datos ---------- */
-  $('upload_btn').addEventListener('click', async () => {
+  /* ---------- subir datos ---------- */
+  $('upload_btn').addEventListener('click', async (e) => {
     if (!empresainfolist) return alert('Aún no hay empresa registrada.');
     if (!rawData.length) return alert('No hay datos para subir.');
 
+    // desactivar botón y mostrar estado
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    statusMsg.textContent = 'Subiendo dat 0%';
+
     try {
-      await window.electronAPI.uploadData({
-        company_id: empresainfolist.empresa_id,
-        ventas_softs: rawData,
-      });
-      alert('Datos enviados correctamente.');
+      await subirEnChunks(rawData, 10000);
+      statusMsg.textContent = '✔ Todo listo';
     } catch (err) {
       console.error(err);
-      alert('Error al enviar datos.');
+      statusMsg.textContent = '✖ Error al enviar datos';
+    } finally {
+      btn.disabled = false;
     }
   });
 });
