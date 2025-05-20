@@ -113,21 +113,20 @@ ipcMain.handle('get-table-data', async (event) => {
   }
 });
 // Manejo de eventos para enviar datos desde la base de datos
-ipcMain.handle('post-upload-data', async (event, data) => {
+ipcMain.handle('post-upload-data', async (_event, payload) => {
+  const { company_id, ventas_softs } = payload;
   try {
     console.log('Enviando datos a la API...');
-    console.log(data);
     const response = await fetch(API_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ company_id: 1, ventas_softs: data }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ company_id, ventas_softs }),
     });
-
-    const responseData = await response.json();
-    console.log('Respuesta de la API:', responseData);
+    const json = await response.json();
+    console.log('Respuesta de la API:', json);
+    return json; // opcional, para que renderer vea algo
   } catch (err) {
     console.error('Error en el proceso:', err);
+    throw err;
   }
 });

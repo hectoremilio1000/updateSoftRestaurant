@@ -1,11 +1,10 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  onEmpresaExiste: (callback) =>
-    ipcRenderer.on('empresa-existe', (_, data) => callback(data)),
-  onEmpresaNoExiste: (callback) =>
-    ipcRenderer.on('empresa-no-existe', callback),
-  registrarEmpresa: (data) => ipcRenderer.invoke('registrar-empresa', data),
-  getTableData: (data) => ipcRenderer.invoke('get-table-data'),
-  uploadData: (data) => ipcRenderer.invoke('post-upload-data', data),
+  onEmpresaExiste: (cb) => ipcRenderer.on('empresa-existe', (_, d) => cb(d)),
+  onEmpresaNoExiste: (cb) => ipcRenderer.on('empresa-no-existe', cb),
+  registrarEmpresa: (d) => ipcRenderer.invoke('registrar-empresa', d),
+  getTableData: () => ipcRenderer.invoke('get-table-data'),
+  // ahora acepta un objeto { company_id, ventas_softs }
+  uploadData: (d) => ipcRenderer.invoke('post-upload-data', d),
 });
