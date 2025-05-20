@@ -58,6 +58,7 @@ async function verificarEmpresa() {
     `);
 
     const empresa = result.recordset[0];
+    console.log(empresa);
     if (empresa) {
       mainWindow.webContents.send('empresa-existe', empresa);
     } else {
