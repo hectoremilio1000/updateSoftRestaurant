@@ -97,13 +97,41 @@ ipcMain.handle('get-table-data', async (event) => {
 
     const pool = await sql.connect(config);
     const result = await sql.query(`
-      SELECT c.cantidad, c.descuento, p.descripcion as name_producto, 
-             c.precio, c.impuesto1, c.preciosinimpuestos, c.preciocatalogo, c.comentario, c.idestacion, c.idmeseroproducto, m.nombre as name_mesero, t.apertura, t.cierre, t.cajero, t.efectivo, t.vales, t.tarjeta, t.credito, t.fondo
-      FROM cheqdet as c 
-      INNER JOIN productos as p ON c.idproducto = p.idproducto INNER JOIN turnos as t ON c.idturno_cierre = t.idturno LEFT JOIN meseros as m ON c.idmeseroproducto=m.idmesero   ORDER BY c.hora DESC
+       SELECT 
+        c.folio,
+        c.mesa,
+        c.total as total_cuenta,
+        c.idturno, c.totalarticulos,
+		c.efectivo,
+		c.tarjeta,
+		c.vales,
+		c.otros,
+		c.propina,
+		c.totalconpropina,
+		c.idtipodescuento,
+		c.descuento as descuento_cuenta,
+		c.cancelado,
+		cd.cantidad, cd.descuento, 
+       p.descripcion as name_producto, 
+		cl.descripcion as clasificacion,
+        cd.precio, cd.impuesto1 as impuesto1, cd.preciosinimpuestos, cd.preciocatalogo,
+		cd.comentario, cd.idestacion, cd.idmeseroproducto, m.nombre as name_mesero,
+		t.apertura, t.cierre, t.cajero, t.efectivo as turno_efectivo, t.vales as turno_vales, t.tarjeta as turno_tarjeta, t.credito,
+		t.fondo
+      FROM cheques AS c
+      INNER JOIN turnos AS t ON c.idturno = t.idturno
+      LEFT JOIN cheqdet AS cd ON c.folio = cd.foliodet
+	  INNER JOIN meseros as m ON cd.idmeseroproducto=m.idmesero
+	  INNER JOIN productos as p ON cd.idproducto=p.idproducto
+	  inner join grupos as g on p.idgrupo=g.idgrupo 
+	  inner join gruposiclasificacion as cl on g.clasificacion=cl.idgruposiclasificacion
+      WHERE 
+        t.apertura >= '2025-04-01T00:00:00' AND 
+        t.apertura <= '2025-05-21T23:59:59'
     `);
 
     const data = result.recordset;
+    console.log(data);
 
     return data;
   } catch (err) {
