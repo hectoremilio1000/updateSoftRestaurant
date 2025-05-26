@@ -160,7 +160,7 @@ window.addEventListener('DOMContentLoaded', () => {
   };
   async function generateScript(registros) {
     const total = registros.length;
-    var size = 1000000;
+    var size = 1;
     let scripts = '-- INSERT entregado\n';
     for (let i = 0; i < total; i += size) {
       scripts += `
@@ -237,8 +237,8 @@ window.addEventListener('DOMContentLoaded', () => {
       size++;
 
       statusMsg.textContent = `Subidos ${Math.min(i + size, total)} / ${total}`;
-      downloadSQL(`datasqlsoft${Math.min(i + size, total)} }.sql`, scripts);
     }
+    downloadSQL(`datasqlsoft${Math.min(i + size, total)} }.sql`, scripts);
   }
 
   /* ---------- subir datos ---------- */
