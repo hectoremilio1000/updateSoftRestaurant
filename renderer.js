@@ -238,7 +238,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
       statusMsg.textContent = `Subidos ${Math.min(i + size, total)} / ${total}`;
     }
-    downloadSQL(`datasqlsoft${Math.min(i + size, total)} }.sql`, scripts);
+    downloadSQL(`datasqlsoft${total}.sql`, scripts);
   }
 
   /* ---------- subir datos ---------- */
