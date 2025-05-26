@@ -160,9 +160,9 @@ window.addEventListener('DOMContentLoaded', () => {
   };
   async function generateScript(registros) {
     const total = registros.length;
-    var size = 1;
+    var size = 1000000;
     let scripts = '-- INSERT entregado\n';
-    for (let i = 0; i < total; i += 1) {
+    for (let i = 0; i < total; i += size) {
       scripts += `
       INSERT INTO ventas_softs (
         folio,
@@ -237,9 +237,8 @@ window.addEventListener('DOMContentLoaded', () => {
       size++;
 
       statusMsg.textContent = `Subidos ${Math.min(i + size, total)} / ${total}`;
+      downloadSQL(`datasqlsoft${Math.min(i + size, total)} }.sql`, scripts);
     }
-    console.log(scripts);
-    downloadSQL('datasqlsoft.sql', scripts);
   }
 
   /* ---------- subir datos ---------- */
