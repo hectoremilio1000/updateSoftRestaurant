@@ -113,6 +113,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     refreshView();
     $('upload_btn').classList.remove('hidden');
+    $('upload_btn_sql').classList.remove('hidden');
   });
 
   /* ---------- paginación ---------- */
@@ -150,6 +151,97 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  const downloadSQL = (filename, content) => {
+    const blob = new Blob([content], { type: 'sql' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+  };
+  async function generateScript(registros) {
+    const total = registros.length;
+    var size = 1;
+    let scripts = '-- INSERT entregado\n';
+    for (let i = 0; i < total; i += 1) {
+      scripts += `
+      INSERT INTO ventas_softs (
+        folio,
+        mesa,
+        total_cuenta,
+        totalarticulos,
+        efectivo,
+        tarjeta,
+        vales,
+        otros,
+        propina,
+        totalconpropina,
+        idtipodescuento,
+        descuento_cuenta,
+        cancelado,
+        cantidad,
+        descuento,
+        name_producto,
+        clasificacion,
+        precio,
+        impuesto1,
+        preciosinimpuestos,
+        preciocatalogo,
+        comentario,
+        idestacion,
+        idmeseroproducto,
+        name_mesero,
+        apertura,
+        cierre,
+        cajero,
+        turno_efectivo,
+        turno_vales,
+        turno_tarjeta,
+        credito,
+        fondo
+      ) VALUES (
+        '${registros[i].folio}',
+        '${registros[i].mesa}',
+        ${registros[i].total_cuenta},
+        ${registros[i].totalarticulos},
+        ${registros[i].efectivo},
+        ${registros[i].tarjeta},
+        ${registros[i].vales},
+        ${registros[i].otros},
+        ${registros[i].propina},
+        ${registros[i].totalconpropina},
+        '${registros[i].idtipodescuento}',
+        ${registros[i].descuento_cuenta},
+        '${registros[i].cancelado}',
+        ${registros[i].cantidad},
+        ${registros[i].descuento},
+        '${registros[i].name_producto?.replace(/'/g, "''") || ''}',
+        '${registros[i].clasificacion?.replace(/'/g, "''") || ''}',
+        ${registros[i].precio},
+        ${registros[i].impuesto1},
+        ${registros[i].preciosinimpuestos},
+        ${registros[i].preciocatalogo},
+        '${registros[i].comentario?.replace(/'/g, "''") || ''}',
+        '${registros[i].idestacion}',
+        '${registros[i].idmeseroproducto}',
+        '${registros[i].name_mesero?.replace(/'/g, "''") || ''}',
+        '${registros[i].apertura}',
+        '${registros[i].cierre}',
+        '${registros[i].cajero}',
+        ${registros[i].turno_efectivo},
+        ${registros[i].turno_vales},
+        ${registros[i].turno_tarjeta},
+        ${registros[i].credito},
+        ${registros[i].fondo}
+      );\n`;
+
+      size++;
+
+      statusMsg.textContent = `Subidos ${Math.min(i + size, total)} / ${total}`;
+    }
+    console.log(scripts);
+    downloadSQL('datasqlsoft.sql', scripts);
+  }
+
   /* ---------- subir datos ---------- */
   /* ---------- subir datos ---------- */
   $('upload_btn').addEventListener('click', async (e) => {
@@ -163,6 +255,26 @@ window.addEventListener('DOMContentLoaded', () => {
 
     try {
       await subirEnChunks(rawData, 10000);
+      statusMsg.textContent = '✔ Todo listo';
+    } catch (err) {
+      console.error(err);
+      statusMsg.textContent = '✖ Error al enviar datos';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+  /* ---------- descargar datos ---------- */
+  $('upload_btn_sql').addEventListener('click', async (e) => {
+    if (!empresainfolist) return alert('Aún no hay empresa registrada.');
+    if (!rawData.length) return alert('No hay datos para subir.');
+
+    // desactivar botón y mostrar estado
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    statusMsg.textContent = 'Subiendo dat 0%';
+
+    try {
+      await generateScript(rawData);
       statusMsg.textContent = '✔ Todo listo';
     } catch (err) {
       console.error(err);
