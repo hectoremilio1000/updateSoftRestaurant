@@ -75,7 +75,7 @@ try {
             $col   = $reader.GetName($i)
             $value = $reader.GetValue($i)
 
-            if ($value -is [DateTime]) { $value = $value.ToString("yyyy-MM-dd HH:mm:ss") }
+            if ($value -is [DateTime]) { $value = $value.ToString("yyyy-MM-ddTHH:mm:ssZ") }
             $row[$col] = $value
         }
         $ventas += $row
