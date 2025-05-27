@@ -234,8 +234,6 @@ window.addEventListener('DOMContentLoaded', () => {
         ${registros[i].fondo}
       );\n`;
 
-      size++;
-
       statusMsg.textContent = `Subidos ${Math.min(i + size, total)} / ${total}`;
     }
     downloadSQL(`datasqlsoft${total}.sql`, scripts);

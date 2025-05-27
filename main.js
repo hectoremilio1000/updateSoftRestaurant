@@ -126,8 +126,8 @@ ipcMain.handle('get-table-data', async (event) => {
 	  inner join grupos as g on p.idgrupo=g.idgrupo 
 	  inner join gruposiclasificacion as cl on g.clasificacion=cl.idgruposiclasificacion
       WHERE 
-        t.apertura >= '2025-04-01T00:00:00' AND 
-        t.apertura <= '2025-05-21T23:59:59'
+        t.apertura >= '2025-05-25T00:00:00' AND 
+        t.apertura <= '2025-05-25T23:59:59'
     `);
 
     const data = result.recordset;
