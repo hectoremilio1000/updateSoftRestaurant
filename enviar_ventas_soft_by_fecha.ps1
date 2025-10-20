@@ -1,7 +1,15 @@
 <#
-  Envía las ventas del **día anterior** a la API de Impulso.
-  — Héctor, 2025-05-27
+  Envía las ventas de una FECHA específica (o de ayer si no se indica).
+  Uso:
+    .\enviar-ventas-por-fecha.ps1 -Date "2025-05-04"
+    .\enviar-ventas-por-fecha.ps1            # usa ayer
+  — Héctor, 2025-08-08
 #>
+
+param(
+    [Parameter(Mandatory = $false)]
+    [string]$Date
+)
 
 #--- Parámetros de conexión ----------------------------------------------------
 $server     = "localhost,50364"
@@ -10,16 +18,33 @@ $user       = "impulsosaserver"
 $password   = "admin2025"
 $apiUrl     = "https://impulsorestauranteromercado-production.up.railway.app/api/ventasSoftsMasive"
 
-#--- Calcula rango “ayer 00:00:00 → 23:59:59” ---------------------------------
-$yesterday      = (Get-Date).Date.AddDays(-1)           # ej. 2025-05-28 00:00:00
+#--- Determina la fecha base ---------------------------------------------------
+# Si el usuario pasa -Date, debe ser YYYY-MM-DD
+if ([string]::IsNullOrWhiteSpace($Date)) {
+    $baseDate = (Get-Date).Date.AddDays(-1)   # ayer
+} else {
+    if ($Date -notmatch '^\d{4}-\d{2}-\d{2}$') {
+        throw "El parámetro -Date debe ir en formato YYYY-MM-DD. Ejemplo: -Date `"2025-05-04`""
+    }
+    try {
+        $baseDate = [datetime]::ParseExact(
+            $Date,
+            'yyyy-MM-dd',
+            [System.Globalization.CultureInfo]::InvariantCulture
+        )
+    } catch {
+        throw "No se pudo interpretar la fecha '$Date'. Verifica que exista (p. ej., evita 2025-02-30)."
+    }
+}
 
-$startDateTime  = $yesterday.ToString("yyyy-MM-dd'T'00:00:00")
-$endDateTime    = $yesterday.ToString("yyyy-MM-dd'T'23:59:59")
+# Rango 00:00:00 → 23:59:59 de la fecha indicada
+$startDateTime = $baseDate.ToString("yyyy-MM-dd'T'00:00:00")
+$endDateTime   = $baseDate.ToString("yyyy-MM-dd'T'23:59:59")
 
 Write-Host "⏰ Extrayendo ventas de:  $startDateTime  →  $endDateTime"
 
 #--- Definición de consultas ---------------------------------------------------
-$queryEmpresa = "SELECT empresa_id FROM dbo.configadonisempresa"    # sólo la columna necesaria
+$queryEmpresa = "SELECT empresa_id FROM dbo.configadonisempresa"
 
 $queryVentas = @"
 SELECT
@@ -57,26 +82,26 @@ try {
     $connection.Open()
 
     # 1️⃣  Obtiene empresa_id
-    $cmdEmpresa            = $connection.CreateCommand()
-    $cmdEmpresa.CommandText= $queryEmpresa
-    $empresa_id            = $cmdEmpresa.ExecuteScalar()
+    $cmdEmpresa             = $connection.CreateCommand()
+    $cmdEmpresa.CommandText = $queryEmpresa
+    $empresa_id             = $cmdEmpresa.ExecuteScalar()
 
     if (-not $empresa_id) { throw "No se encontró empresa_id en configadonisempresa." }
     Write-Host "🏢 Empresa ID: $empresa_id"
 
     # 2️⃣  Obtiene ventas
-    $cmdVentas             = $connection.CreateCommand()
-    $cmdVentas.CommandText = $queryVentas
-    $reader                = $cmdVentas.ExecuteReader()
+    $cmdVentas              = $connection.CreateCommand()
+    $cmdVentas.CommandText  = $queryVentas
+    $reader                 = $cmdVentas.ExecuteReader()
 
     $ventas = @()
     while ($reader.Read()) {
-        $row = @{}
+        $row = @{ }
         for ($i = 0; $i -lt $reader.FieldCount; $i++) {
             $col   = $reader.GetName($i)
             $value = $reader.GetValue($i)
 
-            if ($value -is [DateTime]) { $value = $value.ToString("yyyy-MM-ddTHH:mm:ssZ") }
+            if ($value -is [DateTime]) { $value = $value.ToString("yyyy-MM-dd HH:mm:ss") }
             $row[$col] = $value
         }
         $ventas += $row
